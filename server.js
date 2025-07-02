@@ -11,9 +11,15 @@ const User = require('./models/user');
 dotenv.config();
 
 const app = express();
+const corsOptions = {
+    origin: 'https://mern-todo-qfk9.onrender.com/',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    optionsSuccessStatus: 204 // For legacy browser support
+};
 
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 
 const loginRoutes = require('./routes/login');
