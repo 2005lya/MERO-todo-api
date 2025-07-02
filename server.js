@@ -12,7 +12,7 @@ dotenv.config();
 
 const app = express();
 const corsOptions = {
-    origin: 'https://mern-todo-qfk9.onrender.com/',
+    origin: 'https://7things-api.onrender.com/',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     optionsSuccessStatus: 204 // For legacy browser support
