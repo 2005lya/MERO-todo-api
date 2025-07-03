@@ -21,15 +21,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
-const loginRoutes = require('./routes/login');
-app.use('/', loginRoutes);
-const todoRoutes = require('./routes/todo');
-app.use('/', todoRoutes);
-
-
-
-
 const PORT = process.env.PORT || 5000;
 
 const connectionString = process.env.MONGODB_URI;
@@ -41,6 +32,17 @@ mongoose.connect(connectionString,{
       minPoolSize: 2,                   // Maintain minimum connections
       heartbeatFrequencyMS: 10000,      // Send pings more frequently
     }).then(() => console.log('connect to DB...')).catch(err => console.log(err));
+
+
+const loginRoutes = require('./routes/login');
+app.use('/', loginRoutes);
+const todoRoutes = require('./routes/todo');
+app.use('/', todoRoutes);
+
+
+
+
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })
