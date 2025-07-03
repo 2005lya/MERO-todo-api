@@ -11,7 +11,7 @@ const User = require('../models/user');
 // const validatePassword = (password) => {
 //     const minLength = 6;
 //     const specialCharPattern = /[!@#$%^&*(),.?":{}|<>]/;
-    
+
 //     if (password.length < minLength) {
 //       return false;
 //     }
@@ -21,12 +21,12 @@ const User = require('../models/user');
 //     return true;
 //   };
 
-   const validatePassword = (password) => {
-        // Basic validation: at least 8 characters, one uppercase, one lowercase, one number
-        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
-        console.log('Validating password:', password);
-        return regex.test(password);
-    }
+const validatePassword = (password) => {
+    // Basic validation: at least 8 characters, one uppercase, one lowercase, one number
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    console.log('Validating password:', password);
+    return regex.test(password);
+}
 
 router.post('/create-account', async (req, res) => {
     // const { fullName, email, password } = req.body;
@@ -52,12 +52,12 @@ router.post('/create-account', async (req, res) => {
     //     res.status(500).json({ message: err.message });
     // }
 
-       const { fullName, email, password } = req.body;
+    const { fullName, email, password } = req.body;
 
     if (!fullName.trim() || !email.trim() || !password.trim()) {
         return res.status(400).json({ message: 'All fields are required' });
     }
-    if (validatePassword(password) === false){
+    if (validatePassword(password) === false) {
         return res.status(400).json({ error: true, message: "Password does not meet requirements" });
     }
 
@@ -67,7 +67,7 @@ router.post('/create-account', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const user  = new User({ fullName, email, password });
+        const user = new User({ fullName, email, password });
         await user.save();
 
         // Only include non-sensitive fields in the JWT and response
@@ -83,17 +83,31 @@ router.post('/create-account', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('Login request received:', { email, password });
+    const withRetry = async (operation, retries = 3, delay = 1000) => {
+        try {
+            return await operation();
+        } catch (err) {
+            if (retries > 0 && err.message.includes('buffering timed out')) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return withRetry(operation, retries - 1, delay * 2);
+            }
+            throw err;
+        }
+    };
 
     if (!email.trim() || !password.trim()) {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
     try {
-        const userInfo = await User.findOne({ email });
+        // const userInfo = await User.findOne({ email });
+        const userInfo = async (email) => {
+            return withRetry(() => User.findOne({ email }));
+        };
         if (!userInfo || userInfo.password !== password) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-         const safeUser = { _id: userInfo._id, fullName: userInfo.fullName, email: userInfo.email, createdOn: userInfo.createdOn };
+        const safeUser = { _id: userInfo._id, fullName: userInfo.fullName, email: userInfo.email, createdOn: userInfo.createdOn };
         const accessToken = jwt.sign({ user: safeUser }, process.env.JWT_SECRET, { expiresIn: "10h" });
         return res.json({ error: false, message: "Login Successful", email, accessToken });
     } catch (err) {
@@ -103,7 +117,7 @@ router.post('/login', async (req, res) => {
 
 
 router.get("/get-user", authenticateToken, async (req, res) => {
-    const  user  = req.user;
+    const user = req.user;
 
     const isUser = await User.findOne({ _id: user._id });
 
