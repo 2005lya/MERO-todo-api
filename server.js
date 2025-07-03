@@ -34,7 +34,13 @@ const PORT = process.env.PORT || 5000;
 
 const connectionString = process.env.MONGODB_URI;
 
-mongoose.connect(connectionString).then(() => console.log('connect to DB...')).catch(err => console.log(err));
+mongoose.connect(connectionString,{
+      serverSelectionTimeoutMS: 30000,  // 30 seconds for server selection
+      socketTimeoutMS: 45000,           // 45 seconds for socket operations
+      maxPoolSize: 10,                  // Reduce connection pool size
+      minPoolSize: 2,                   // Maintain minimum connections
+      heartbeatFrequencyMS: 10000,      // Send pings more frequently
+    }).then(() => console.log('connect to DB...')).catch(err => console.log(err));
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 })
