@@ -113,30 +113,9 @@ router.post('/login', async (req, res) => {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const withAuthRetry = async (operation, credentials, retries = 3) => {
-  try {
-    return await operation();
-  } catch (err) {
-    // Only retry on connection timeouts
-    if (retries > 0 && err.message.includes('buffering timed out')) {
-      await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
-      return withAuthRetry(operation, credentials, retries - 1);
-    }
     
-    // Handle authentication-specific cases
-    if (err.message.includes('user not found') || err.message.includes('invalid password')) {
-      throw new Error('Invalid email or password1111');
-    }
-    
-    throw err; // Re-throw other errors
-  }
-};
-
     try {
-        // const userInfo = await User.findOne({ email });
-        const userInfo = async (email) => {
-            return withRetry(() => User.findOne({ email }));
-        };
+        const userInfo = await User.findOne({ email });
         if (!userInfo || userInfo.password !== password) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
