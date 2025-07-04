@@ -53,17 +53,17 @@ router.post('/create-account', async (req, res) => {
     // }
 
     const { fullName, email, password } = req.body;
-    const withRetry = async (operation, retries = 3, delay = 1000) => {
-        try {
-            return await operation();
-        } catch (err) {
-            if (retries > 0 && err.message.includes('buffering timed out')) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-                return withRetry(operation, retries - 1, delay * 2);
-            }
-            throw err;
-        }
-    };
+    // const withRetry = async (operation, retries = 3, delay = 1000) => {
+    //     try {
+    //         return await operation();
+    //     } catch (err) {
+    //         if (retries > 0 && err.message.includes('buffering timed out')) {
+    //             await new Promise(resolve => setTimeout(resolve, delay));
+    //             return withRetry(operation, retries - 1, delay * 2);
+    //         }
+    //         throw err;
+    //     }
+    // };
 
     if (!fullName.trim() || !email.trim() || !password.trim()) {
         return res.status(400).json({ message: 'All fields are required' });
@@ -73,10 +73,10 @@ router.post('/create-account', async (req, res) => {
     }
 
     try {
-        // const existingUser = await User.findOne({ email });
-         const existingUser = async (email) => {
-            return withRetry(() => User.findOne({ email }));
-        };
+        const existingUser = await User.findOne({ email });
+        //  const existingUser = async (email) => {
+        //     return withRetry(() => User.findOne({ email }));
+        // };
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
@@ -97,21 +97,40 @@ router.post('/create-account', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('Login request received:', { email, password });
-    const withRetry = async (operation, retries = 3, delay = 1000) => {
-        try {
-            return await operation();
-        } catch (err) {
-            if (retries > 0 && err.message.includes('buffering timed out')) {
-                await new Promise(resolve => setTimeout(resolve, delay));
-                return withRetry(operation, retries - 1, delay * 2);
-            }
-            throw err;
-        }
-    };
+    // const withRetry = async (operation, retries = 3, delay = 1000) => {
+    //     try {
+    //         return await operation();
+    //     } catch (err) {
+    //         if (retries > 0 && err.message.includes('buffering timed out')) {
+    //             await new Promise(resolve => setTimeout(resolve, delay));
+    //             return withRetry(operation, retries - 1, delay * 2);
+    //         }
+    //         throw err;
+    //     }
+    // };
 
     if (!email.trim() || !password.trim()) {
         return res.status(400).json({ message: 'All fields are required' });
     }
+
+    const withAuthRetry = async (operation, credentials, retries = 3) => {
+  try {
+    return await operation();
+  } catch (err) {
+    // Only retry on connection timeouts
+    if (retries > 0 && err.message.includes('buffering timed out')) {
+      await new Promise(resolve => setTimeout(resolve, 1000 * (4 - retries)));
+      return withAuthRetry(operation, credentials, retries - 1);
+    }
+    
+    // Handle authentication-specific cases
+    if (err.message.includes('user not found') || err.message.includes('invalid password')) {
+      throw new Error('Invalid email or password1111');
+    }
+    
+    throw err; // Re-throw other errors
+  }
+};
 
     try {
         // const userInfo = await User.findOne({ email });
