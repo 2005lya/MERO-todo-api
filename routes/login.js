@@ -53,6 +53,17 @@ router.post('/create-account', async (req, res) => {
     // }
 
     const { fullName, email, password } = req.body;
+    const withRetry = async (operation, retries = 3, delay = 1000) => {
+        try {
+            return await operation();
+        } catch (err) {
+            if (retries > 0 && err.message.includes('buffering timed out')) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return withRetry(operation, retries - 1, delay * 2);
+            }
+            throw err;
+        }
+    };
 
     if (!fullName.trim() || !email.trim() || !password.trim()) {
         return res.status(400).json({ message: 'All fields are required' });
@@ -62,7 +73,10 @@ router.post('/create-account', async (req, res) => {
     }
 
     try {
-        const existingUser = await User.findOne({ email });
+        // const existingUser = await User.findOne({ email });
+         const existingUser = async (email) => {
+            return withRetry(() => User.findOne({ email }));
+        };
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
@@ -118,7 +132,7 @@ router.post('/login', async (req, res) => {
 
 router.get("/get-user", authenticateToken, async (req, res) => {
     const user = req.user;
-
+   
     const isUser = await User.findOne({ _id: user._id });
 
     if (!isUser) {
